@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+// YouTube的两个获取评论的API接口，continuation base64 的逆向
+// 字段名称是根据常见 protobuf 用法和提供的数据猜测的。
+// 特别感谢：https://protobuf-decoder.netlify.app/
+
+//请求API https://www.youtube.com/youtubei/v1/next?prettyPrint=false
+message NextContinuation {
+  // 字段 2 看起来是视频 ID 的一个包装器。
+  // 它可能是一个嵌套消息，或者一个 map，但嵌套消息在结构化数据中更常见。
+  CommentAreaWrapper commentAreaWrapper = 2;
+
+  // 未知字段3，必须，赋值：6
+  int32 uField3 = 3;
+
+  // 字段 6 获取评论列表主要的请求体
+  MainCommentRequest mainCommentRequest = 6;
+}
+
+message CommentAreaWrapper {
+  // 这个包装器中的字段 2 显然包含视频 ID。
+  string videoId = 2; // "iBNQdQJQXcw"
+}
+
+message MainCommentRequest {
+  // 字段 4 似乎是一个嵌套消息，包含特定的评论参数。
+  CommentParameters commentParameters = 4;
+
+  // 字段 8 赋值："comments-section" 
+  string sectionIdentifier = 8;
+}
+
+message CommentParameters {
+  // 这里的字段 4 也包含视频 ID，表明重复使用或在不同上下文中使用。
+  string videoId = 4;
+
+  // 字段29，帖子ID
+  string postId = 29;
+  // 字段30，帖子所属的频道ID
+  string channelId = 30;
+
+  // 字段6，排序方式，最热门 or 最新
+  SortType sortType = 6;
+
+  // 字段 16 是你要查看的评论 ID。
+  string targetCommentId = 16;
+
+  enum SortType {
+    HOT = 0;
+    LATEST = 1;
+  }
+}
+
+//请求API https://www.youtube.com/youtubei/v1/browse?prettyPrint=false
+message BrowserContinuation {
+  Request request = 80226972;
+
+  message Request {
+    //字段2，描述？赋值："FEcomment_post_detail_page_web_top_level"
+    string description = 2;
+    //字段3，类似continuation，但是这个又他妈的套了一层
+    string continuationBase64 = 3;
+  }
+}
+
+//帖子的评论列表请求
+message BrowserCommentListContinuation {
+  //字段2，描述？赋值："community"
+  string description = 2;
+  //字段53，获取评论列表主要的请求体
+  MainCommentRequest mainCommentRequest = 53;
+}
