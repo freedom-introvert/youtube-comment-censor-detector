@@ -123,7 +123,7 @@
 
 所以得用插件实现，插件有比油猴更早的执行时机。
 
-
+插件下载：[Define property blocker](https://github.com/freedom-introvert/youtube-comment-censor-detector/releases/tag/DPB-1.0)
 
 下载插件后，将压缩文件解压，然后“加载已解压的扩展程序”，选择插件文件夹，即可安装。
 
