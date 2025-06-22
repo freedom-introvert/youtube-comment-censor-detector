@@ -15,7 +15,7 @@ export default defineConfig({
           "zh-TW": "YouTube發評反詐"
         },
         description: {
-          "": "A real-time comment checker, Fuck YouTube’s deceptive comment censorship",
+          "": "A real-time comment checker, Fuck YouTube’s opaque comment censorship",
           "zh-CN": "Fuck YouTube版“阿瓦隆系统”，实时检查评论状态，防止评论被儿童偷偷误食你还被蒙在鼓里",
           "zh-TW": "Fuck YouTube版“阿瓦隆系統”，即時檢查評論狀態，防止評論被兒童偷偷誤食你還被蒙在鼓裡"
         },
