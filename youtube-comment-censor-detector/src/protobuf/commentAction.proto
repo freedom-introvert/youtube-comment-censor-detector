@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+//操作评论的请求，API链接 https://www.youtube.com/youtubei/v1/comment/perform_comment_action?prettyPrint=false
+message CommentAction {
+  //字段 1
+  Action action = 1;
+  //字段 3 评论ID，
+  string commentId = 3;
+}
+
+enum Action{
+  //没意义，仅满足枚举第一个值必须0的要求
+  DEFAULT = 0;
+  //点赞或取消点赞评论
+  LIKE = 5;
+  //删除评论
+  DELETE = 6;
+}

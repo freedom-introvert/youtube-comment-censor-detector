@@ -23,10 +23,12 @@ message CommentAreaWrapper {
 }
 
 message MainCommentRequest {
-  // 字段 4 似乎是一个嵌套消息，包含特定的评论参数。
+  // 字段 4 一级评论区的请求参数
   CommentParameters commentParameters = 4;
-
-  // 字段 8 赋值："comments-section" 
+  // 字段 3 二级评论区（评论回复的楼中楼）的请求参数 
+  CommentReplyParameters commentReplyParameters = 3;
+  // 字段 8 赋值："comments-section" 如果是二级评论区，则赋值 `comment-replies-item-${根评论ID}`
+  //其实它叫应该targetId，在这发现它被这么叫 onResponseReceivedEndpoints[0].appendContinuationItemsAction.targetId
   string sectionIdentifier = 8;
 }
 
@@ -42,7 +44,7 @@ message CommentParameters {
   // 字段6，排序方式，最热门 or 最新
   SortType sortType = 6;
 
-  // 字段 16 是你要查看的评论 ID。
+  // 字段 16 是你要查看的评论 ID。是楼中楼的二级评论也无妨
   string targetCommentId = 16;
 
   enum SortType {
@@ -51,12 +53,44 @@ message CommentParameters {
   }
 }
 
+
+message CommentReplyParameters{
+  // 字段 2 根评论的评论ID
+  string rootCommentId = 2;
+
+  // 字段 5 当前评论区频道主的频道ID（不是根评论发送者的频道ID）,视频和帖子都需要加上此参数
+  string channelId = 5;
+
+  // 字段 6 视频ID
+  string videoId = 6;
+
+  // 字段 15 帖子ID
+  string postId = 15;
+
+  // 字段 9 每页大小 
+  int32 pageSize = 9;
+
+  // 字段 16 排序参数，妈的有病，不统一就算了，还套Message😅
+  SortParam sortParam = 16;
+
+  message SortParam {
+    SortType sortType = 1;
+
+    enum SortType {
+      DEFAULT = 0;
+      HOT = 1;
+      LATEST = 2;
+    }
+  }
+}
+
+
 //请求API https://www.youtube.com/youtubei/v1/browse?prettyPrint=false
 message BrowserContinuation {
   Request request = 80226972;
 
   message Request {
-    //字段2，描述？赋值："FEcomment_post_detail_page_web_top_level"
+    //字段2，描述？赋值："FEcomment_post_detail_page_web_top_level" 或 "FEcomment_post_detail_page_web_replies_page" （楼中楼）
     string description = 2;
     //字段3，类似continuation，但是这个又他妈的套了一层
     string continuationBase64 = 3;
@@ -70,3 +104,4 @@ message BrowserCommentListContinuation {
   //字段53，获取评论列表主要的请求体
   MainCommentRequest mainCommentRequest = 53;
 }
+

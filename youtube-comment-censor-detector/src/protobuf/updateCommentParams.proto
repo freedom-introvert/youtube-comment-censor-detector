@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+message UpdateCommentParams {
+  string commentId = 1;
+}

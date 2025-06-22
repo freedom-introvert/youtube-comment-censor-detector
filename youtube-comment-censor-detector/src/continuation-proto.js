@@ -65,11 +65,14 @@ export const MainCommentRequest = $root.MainCommentRequest = (() => {
     }
 
     MainCommentRequest.prototype.commentParameters = null;
+    MainCommentRequest.prototype.commentReplyParameters = null;
     MainCommentRequest.prototype.sectionIdentifier = "";
 
     MainCommentRequest.encode = function encode(m, w) {
         if (!w)
             w = $Writer.create();
+        if (m.commentReplyParameters != null && Object.hasOwnProperty.call(m, "commentReplyParameters"))
+            $root.CommentReplyParameters.encode(m.commentReplyParameters, w.uint32(26).fork()).ldelim();
         if (m.commentParameters != null && Object.hasOwnProperty.call(m, "commentParameters"))
             $root.CommentParameters.encode(m.commentParameters, w.uint32(34).fork()).ldelim();
         if (m.sectionIdentifier != null && Object.hasOwnProperty.call(m, "sectionIdentifier"))
@@ -119,6 +122,73 @@ export const CommentParameters = $root.CommentParameters = (() => {
     })();
 
     return CommentParameters;
+})();
+
+export const CommentReplyParameters = $root.CommentReplyParameters = (() => {
+
+    function CommentReplyParameters(p) {
+        if (p)
+            for (var ks = Object.keys(p), i = 0; i < ks.length; ++i)
+                if (p[ks[i]] != null)
+                    this[ks[i]] = p[ks[i]];
+    }
+
+    CommentReplyParameters.prototype.rootCommentId = "";
+    CommentReplyParameters.prototype.channelId = "";
+    CommentReplyParameters.prototype.videoId = "";
+    CommentReplyParameters.prototype.postId = "";
+    CommentReplyParameters.prototype.pageSize = 0;
+    CommentReplyParameters.prototype.sortParam = null;
+
+    CommentReplyParameters.encode = function encode(m, w) {
+        if (!w)
+            w = $Writer.create();
+        if (m.rootCommentId != null && Object.hasOwnProperty.call(m, "rootCommentId"))
+            w.uint32(18).string(m.rootCommentId);
+        if (m.channelId != null && Object.hasOwnProperty.call(m, "channelId"))
+            w.uint32(42).string(m.channelId);
+        if (m.videoId != null && Object.hasOwnProperty.call(m, "videoId"))
+            w.uint32(50).string(m.videoId);
+        if (m.pageSize != null && Object.hasOwnProperty.call(m, "pageSize"))
+            w.uint32(72).int32(m.pageSize);
+        if (m.postId != null && Object.hasOwnProperty.call(m, "postId"))
+            w.uint32(122).string(m.postId);
+        if (m.sortParam != null && Object.hasOwnProperty.call(m, "sortParam"))
+            $root.CommentReplyParameters.SortParam.encode(m.sortParam, w.uint32(130).fork()).ldelim();
+        return w;
+    };
+
+    CommentReplyParameters.SortParam = (function() {
+
+        function SortParam(p) {
+            if (p)
+                for (var ks = Object.keys(p), i = 0; i < ks.length; ++i)
+                    if (p[ks[i]] != null)
+                        this[ks[i]] = p[ks[i]];
+        }
+
+        SortParam.prototype.sortType = 0;
+
+        SortParam.encode = function encode(m, w) {
+            if (!w)
+                w = $Writer.create();
+            if (m.sortType != null && Object.hasOwnProperty.call(m, "sortType"))
+                w.uint32(8).int32(m.sortType);
+            return w;
+        };
+
+        SortParam.SortType = (function() {
+            const valuesById = {}, values = Object.create(valuesById);
+            values[valuesById[0] = "DEFAULT"] = 0;
+            values[valuesById[1] = "HOT"] = 1;
+            values[valuesById[2] = "LATEST"] = 2;
+            return values;
+        })();
+
+        return SortParam;
+    })();
+
+    return CommentReplyParameters;
 })();
 
 export const BrowserContinuation = $root.BrowserContinuation = (() => {
