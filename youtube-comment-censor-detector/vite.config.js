@@ -9,19 +9,23 @@ export default defineConfig({
     monkey({
       entry: 'src/main.js',
       userscript: {
-        name:{
-          "":"youtube-comment-censor-detector",
-          zh:"YouTube发评反诈"
+        name: {
+          "": "youtube-comment-censor-detector",
+          "zh-CN": "YouTube发评反诈",
+          "zh-TW": "YouTube發評反詐"
         },
-        description:{
-          "":"A real-time comment checker, Fuck YouTube's comment censorship",
-          zh:"Fuck YouTube版“阿瓦隆系统”，实时检查评论状态，防止评论被儿童偷偷误食你还被蒙在鼓里"
+        description: {
+          "": "A real-time comment checker, Fuck YouTube’s deceptive comment censorship",
+          "zh-CN": "Fuck YouTube版“阿瓦隆系统”，实时检查评论状态，防止评论被儿童偷偷误食你还被蒙在鼓里",
+          "zh-TW": "Fuck YouTube版“阿瓦隆系統”，即時檢查評論狀態，防止評論被兒童偷偷誤食你還被蒙在鼓裡"
         },
-        icon: 'https://vasiojnvaj.oss-cn-hangzhou.aliyuncs.com/upload/msgImage/20250602/17488766795842.rar',//avif
+        icon: 'https://raw.githubusercontent.com/freedom-introvert/youtube-comment-censor-detector/refs/heads/main/logo/logo_256x256.avif',
         namespace: 'npm/vite-plugin-monkey',
         match: ['*://*.youtube.com/*'],
         author: "freedom-introvert",
-        version: "1.0.0"
+        version: "2.0.0",
+        license: "GPL",
+        "run-at":"document-start"
       },
       build: {
         externalGlobals: {

@@ -1,0 +1,15 @@
+{
+  "name": "Define property blocker",
+  "description": "Prevent some websites from locking fetch and other functions",
+  "version": "1.0",
+  "manifest_version": 3,
+  "content_scripts": [
+    {
+      "id":"define-property-blocker",
+      "matches": ["*://*.youtube.com/*","*://youtube.com/*"],
+      "js": ["define-property-blocker.js"],
+      "world": "MAIN",   
+      "run_at": "document_start"
+    }
+  ]
+}
