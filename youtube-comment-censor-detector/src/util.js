@@ -84,3 +84,20 @@ export function translateState(state){
       return "还未检查"
   }
 }
+
+ /**
+ * 从一个单键值对对象数组中，根据给定的键查找并返回对应的值。
+ * 这种结构常见于需要保持键值对独立性的数据格式。
+ * by ai
+ * @param {Array<Object>} data - 包含单键值对对象的数组。
+ * @param {string} key - 要查找的键。
+ * @returns {*} 返回找到的值，如果键不存在则返回 undefined。
+ */
+export function findValueInSingleEntryArray(data, key) {
+  for (const item of data) {
+    if (item.hasOwnProperty(key)) {
+      return item[key];
+    }
+  }
+  return undefined;
+}

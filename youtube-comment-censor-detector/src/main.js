@@ -8,7 +8,7 @@ import { unsafeWindow, GM_registerMenuCommand, GM_addElement } from "$"
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import App from './App.vue';
-import { createUrl, urlSafeBase64ToStandard, standardBase64ToUrlSafe } from "./util";
+import { createUrl, urlSafeBase64ToStandard, standardBase64ToUrlSafe,findValueInSingleEntryArray } from "./util";
 
 
 // import en from 'element-plus/es/locale/lang/en'
@@ -264,7 +264,8 @@ async function toCheck(commentRecord) {
   checkingCommentIdSet.add(commentRecord.commentId);
   //查找新插入的评论元素，即发布的那条
   let selector;
-  if (window.location.pathname.startsWith("/channel")) {//是否是帖子的评论区
+  let pathname = window.location.pathname;
+  if (pathname.startsWith("/post") || pathname.startsWith("/channel")) {//是否是帖子的评论区
     selector = "ytd-item-section-renderer#sections";
   } else {//否则是视频的
     selector = "#comments";
@@ -544,16 +545,15 @@ async function handlerYoutubei(request) {
       let url = webCommandMetadata.url;
       let commentAreaInfo = {};
 
+      //视频发布者频道ID
+      commentAreaInfo.channelId = findValueInSingleEntryArray(json.actions[0].runAttestationCommand.ids, "externalChannelId");
+
       if (webPageType == "WEB_PAGE_TYPE_WATCH") {//视频
         //视频ID
         commentAreaInfo.videoId = innertubeCommand.watchEndpoint.videoId;
-        //视频发布者频道ID
-        commentAreaInfo.channelId = json.actions[0].runAttestationCommand.ids[2].externalChannelId;
       } else if (webPageType == "WEB_PAGE_TYPE_BROWSE") {//帖子
-        //帖子发布者频道ID
-        commentAreaInfo.channelId = url.split("/")[2];
         //帖子ID
-        commentAreaInfo.postId = createUrl(url).searchParams.get("lb");
+        commentAreaInfo.postId = createUrl(url).pathname.split("/")[2];
       }
 
       let author = entity.author;
@@ -726,8 +726,7 @@ try {
 } catch (err) {
   console.warn("替换 unsafeWindow.fetch 失败！相关信息：", err, Object.getOwnPropertyDescriptor(unsafeWindow, 'fetch'));
   if (confirm("fetch已被提前锁定，替换失败，YouTube发评反诈可能无法正常工作。\n你可以安装本项目的 Define property blocker 插件来反制锁定。\n\n点击“确定”前往项目地址，点击“取消”忽略。")) {
-    // 用户点击了确定，跳转到插件地址
-    window.location.href = "https://github.com/freedom-introvert/youtube-comment-censor-detector"; // 替换为你的插件地址
+    window.location.href = "https://github.com/freedom-introvert/youtube-comment-censor-detector";
   }
 }
 
