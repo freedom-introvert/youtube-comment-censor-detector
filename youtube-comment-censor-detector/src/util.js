@@ -34,7 +34,10 @@ export function standardBase64ToUrlSafe(standardBase64) {
 }
 
 export function createUrl(path) {
-  return new URL(new URL(window.location.href).origin + path);
+  if(path){
+    return new URL(new URL(window.location.href).origin + path);
+  }
+  return new URL(window.location.href);
 }
 
 export function formatSecondsToMMSS(seconds) {

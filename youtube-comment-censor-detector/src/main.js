@@ -8,7 +8,11 @@ import { unsafeWindow, GM_registerMenuCommand, GM_addElement } from "$"
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import App from './App.vue';
-import { createUrl, urlSafeBase64ToStandard, standardBase64ToUrlSafe,findValueInSingleEntryArray } from "./util";
+import { createUrl, urlSafeBase64ToStandard, standardBase64ToUrlSafe, findValueInSingleEntryArray } from "./util";
+import {
+  createVideoRootCommentListContinuation, createVideoReplyCommentListContinuation,
+  createPostRootCommentListContinuation, createPostReplyCommentListContinuation
+} from './api-uitls';
 
 
 // import en from 'element-plus/es/locale/lang/en'
@@ -55,6 +59,14 @@ var db = null;
 
 //正在检查中的评论ID集合，用于阻止正在检查中的评论被用户删除
 const checkingCommentIdSet = new Set();
+
+function getAuthorization() {
+  return authorizationCache;
+}
+
+function getContext() {
+  return contextCache;
+}
 
 function waitForElement(observeSelector, targetSelector) {
   return new Promise((resolve) => {
@@ -305,113 +317,38 @@ function createCommentListRequest(commentRecord, isLatestSort) {
     if (commentRecord.commentId.indexOf(".") != -1) {
       //视频的二级（回复）评论
       let rootCommentId = commentRecord.commentId.split(".")[0];
-      let payload = {
-        uField3: 6,
-        commentAreaWrapper: {
-          videoId: commentRecord.commentAreaInfo.videoId
-        },
-        mainCommentRequest: {
-          sectionIdentifier: `comment-replies-item-${rootCommentId}`,
-          commentReplyParameters: {
-            rootCommentId,
-            channelId: commentRecord.commentAreaInfo.channelId,
-            videoId: commentRecord.commentAreaInfo.videoId,
-            pageSize: 10,
-            sortParam: {
-              sortType: isLatestSort ? 2 : 1
-            }
-          }
-        }
-      }
-      let encoded = NextContinuation.encode(payload);
-      let buffer = encoded.finish();
-      continuation = btoa(String.fromCharCode(...buffer));
-      continuation = standardBase64ToUrlSafe(continuation);
+      continuation = createVideoReplyCommentListContinuation(
+        commentRecord.commentAreaInfo.channelId,
+        commentRecord.commentAreaInfo.videoId,
+        rootCommentId,
+        isLatestSort
+      );
     } else {
       //视频的一级评论
-      let payload = {
-        uField3: 6,
-        commentAreaWrapper: {
-          videoId: commentRecord.commentAreaInfo.videoId
-        },
-        mainCommentRequest: {
-          sectionIdentifier: "comments-section",
-          commentParameters: {
-            videoId: commentRecord.commentAreaInfo.videoId,
-            sortType: isLatestSort ? 1 : 0
-          }
-        }
-      }
-      let encoded = NextContinuation.encode(payload);
-      let buffer = encoded.finish();
-      continuation = btoa(String.fromCharCode(...buffer));
-      continuation = standardBase64ToUrlSafe(continuation);
+      continuation = createVideoRootCommentListContinuation(
+        commentRecord.commentAreaInfo.channelId,
+        commentRecord.commentAreaInfo.videoId,
+        isLatestSort
+      );
     }
   } else if (commentRecord.webPageType == "WEB_PAGE_TYPE_BROWSE") {
     api = "https://www.youtube.com/youtubei/v1/browse?prettyPrint=false";
     if (commentRecord.commentId.indexOf(".") != -1) {
       //帖子的二级（回复）评论
       let rootCommentId = commentRecord.commentId.split(".")[0];
-      let payload = {
-        description: "community",
-        mainCommentRequest: {
-          sectionIdentifier: `comment-replies-item-${rootCommentId}`,
-          commentReplyParameters: {
-            rootCommentId,
-            channelId: commentRecord.commentAreaInfo.channelId,
-            postId: commentRecord.commentAreaInfo.postId,
-            pageSize: 10,
-            sortParam: {
-              sortType: isLatestSort ? 2 : 1
-            }
-          }
-        }
-      }
-      let encoded = BrowserCommentListContinuation.encode(payload);
-      let buffer = encoded.finish();
-      continuation = btoa(String.fromCharCode(...buffer));
-      continuation = standardBase64ToUrlSafe(continuation);
-
-      payload = {
-        request: {
-          description: "FEcomment_post_detail_page_web_replies_page",
-          continuationBase64: continuation
-        }
-      }
-
-      encoded = BrowserContinuation.encode(payload);
-      buffer = encoded.finish();
-      continuation = btoa(String.fromCharCode(...buffer));
-      continuation = standardBase64ToUrlSafe(continuation);
+      continuation = createPostReplyCommentListContinuation(
+        commentRecord.commentAreaInfo.channelId,
+        commentRecord.commentAreaInfo.postId,
+        rootCommentId,
+        isLatestSort
+      );
     } else {
       //帖子的一级评论
-      let payload = {
-        description: "community",
-        mainCommentRequest: {
-          sectionIdentifier: "comments-section",
-          commentParameters: {
-            channelId: commentRecord.commentAreaInfo.channelId,
-            postId: commentRecord.commentAreaInfo.postId,
-            sortType: isLatestSort ? 1 : 0
-          }
-        }
-      }
-      let encoded = BrowserCommentListContinuation.encode(payload);
-      let buffer = encoded.finish();
-      continuation = btoa(String.fromCharCode(...buffer));
-      continuation = standardBase64ToUrlSafe(continuation);
-
-      payload = {
-        request: {
-          description: "FEcomment_post_detail_page_web_top_level",
-          continuationBase64: continuation
-        }
-      }
-
-      encoded = BrowserContinuation.encode(payload);
-      buffer = encoded.finish();
-      continuation = btoa(String.fromCharCode(...buffer));
-      continuation = standardBase64ToUrlSafe(continuation);
+      continuation = createPostRootCommentListContinuation(
+        commentRecord.commentAreaInfo.channelId,
+        commentRecord.commentAreaInfo.postId,
+        isLatestSort
+      );
     }
   }
 
@@ -730,6 +667,7 @@ try {
   }
 }
 
+
 /*
 
 const iframe = document.createElement('iframe');
@@ -868,6 +806,10 @@ async function init() {
     menuListener.onOpenHistory();
   })
 
+  GM_registerMenuCommand("🔍 搜索热门屏蔽评论", () => {
+    menuListener.onSearchHotBan();
+  })
+
   //创建用于显示历史评论、设置等对话框的图层
   const div = document.createElement('div');
   div.id = "yt-ccd";
@@ -880,6 +822,9 @@ async function init() {
   app.provide("check", check);
   app.provide("hotBanCheck", hotBanCheck);
   app.provide("deleteComment", deleteComment)
+  app.provide("getAuthorization", getAuthorization);
+  app.provide("getContext", getContext);
+  app.provide("originalFetch", originalFetch);
   app.mount(div);
 }
 
