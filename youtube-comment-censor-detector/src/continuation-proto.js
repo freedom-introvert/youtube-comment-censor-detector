@@ -1,7 +1,7 @@
 /*eslint-disable block-scoped-var, id-length, no-control-regex, no-magic-numbers, no-prototype-builtins, no-redeclare, no-shadow, no-var, sort-vars*/
 import * as $protobuf from "protobufjs/minimal";
 
-const $Writer = $protobuf.Writer, $util = $protobuf.util;
+const $Reader = $protobuf.Reader, $Writer = $protobuf.Writer, $util = $protobuf.util;
 
 const $root = $protobuf.roots["default"] || ($protobuf.roots["default"] = {});
 
@@ -30,6 +30,35 @@ export const NextContinuation = $root.NextContinuation = (() => {
         return w;
     };
 
+    NextContinuation.decode = function decode(r, l, e) {
+        if (!(r instanceof $Reader))
+            r = $Reader.create(r);
+        var c = l === undefined ? r.len : r.pos + l, m = new $root.NextContinuation();
+        while (r.pos < c) {
+            var t = r.uint32();
+            if (t === e)
+                break;
+            switch (t >>> 3) {
+            case 2: {
+                    m.commentAreaWrapper = $root.CommentAreaWrapper.decode(r, r.uint32());
+                    break;
+                }
+            case 3: {
+                    m.uField3 = r.int32();
+                    break;
+                }
+            case 6: {
+                    m.mainCommentRequest = $root.MainCommentRequest.decode(r, r.uint32());
+                    break;
+                }
+            default:
+                r.skipType(t & 7);
+                break;
+            }
+        }
+        return m;
+    };
+
     return NextContinuation;
 })();
 
@@ -50,6 +79,27 @@ export const CommentAreaWrapper = $root.CommentAreaWrapper = (() => {
         if (m.videoId != null && Object.hasOwnProperty.call(m, "videoId"))
             w.uint32(18).string(m.videoId);
         return w;
+    };
+
+    CommentAreaWrapper.decode = function decode(r, l, e) {
+        if (!(r instanceof $Reader))
+            r = $Reader.create(r);
+        var c = l === undefined ? r.len : r.pos + l, m = new $root.CommentAreaWrapper();
+        while (r.pos < c) {
+            var t = r.uint32();
+            if (t === e)
+                break;
+            switch (t >>> 3) {
+            case 2: {
+                    m.videoId = r.string();
+                    break;
+                }
+            default:
+                r.skipType(t & 7);
+                break;
+            }
+        }
+        return m;
     };
 
     return CommentAreaWrapper;
@@ -78,6 +128,35 @@ export const MainCommentRequest = $root.MainCommentRequest = (() => {
         if (m.sectionIdentifier != null && Object.hasOwnProperty.call(m, "sectionIdentifier"))
             w.uint32(66).string(m.sectionIdentifier);
         return w;
+    };
+
+    MainCommentRequest.decode = function decode(r, l, e) {
+        if (!(r instanceof $Reader))
+            r = $Reader.create(r);
+        var c = l === undefined ? r.len : r.pos + l, m = new $root.MainCommentRequest();
+        while (r.pos < c) {
+            var t = r.uint32();
+            if (t === e)
+                break;
+            switch (t >>> 3) {
+            case 4: {
+                    m.commentParameters = $root.CommentParameters.decode(r, r.uint32());
+                    break;
+                }
+            case 3: {
+                    m.commentReplyParameters = $root.CommentReplyParameters.decode(r, r.uint32());
+                    break;
+                }
+            case 8: {
+                    m.sectionIdentifier = r.string();
+                    break;
+                }
+            default:
+                r.skipType(t & 7);
+                break;
+            }
+        }
+        return m;
     };
 
     return MainCommentRequest;
@@ -112,6 +191,43 @@ export const CommentParameters = $root.CommentParameters = (() => {
         if (m.channelId != null && Object.hasOwnProperty.call(m, "channelId"))
             w.uint32(242).string(m.channelId);
         return w;
+    };
+
+    CommentParameters.decode = function decode(r, l, e) {
+        if (!(r instanceof $Reader))
+            r = $Reader.create(r);
+        var c = l === undefined ? r.len : r.pos + l, m = new $root.CommentParameters();
+        while (r.pos < c) {
+            var t = r.uint32();
+            if (t === e)
+                break;
+            switch (t >>> 3) {
+            case 4: {
+                    m.videoId = r.string();
+                    break;
+                }
+            case 29: {
+                    m.postId = r.string();
+                    break;
+                }
+            case 30: {
+                    m.channelId = r.string();
+                    break;
+                }
+            case 6: {
+                    m.sortType = r.int32();
+                    break;
+                }
+            case 16: {
+                    m.targetCommentId = r.string();
+                    break;
+                }
+            default:
+                r.skipType(t & 7);
+                break;
+            }
+        }
+        return m;
     };
 
     CommentParameters.SortType = (function() {
@@ -158,6 +274,47 @@ export const CommentReplyParameters = $root.CommentReplyParameters = (() => {
         return w;
     };
 
+    CommentReplyParameters.decode = function decode(r, l, e) {
+        if (!(r instanceof $Reader))
+            r = $Reader.create(r);
+        var c = l === undefined ? r.len : r.pos + l, m = new $root.CommentReplyParameters();
+        while (r.pos < c) {
+            var t = r.uint32();
+            if (t === e)
+                break;
+            switch (t >>> 3) {
+            case 2: {
+                    m.rootCommentId = r.string();
+                    break;
+                }
+            case 5: {
+                    m.channelId = r.string();
+                    break;
+                }
+            case 6: {
+                    m.videoId = r.string();
+                    break;
+                }
+            case 15: {
+                    m.postId = r.string();
+                    break;
+                }
+            case 9: {
+                    m.pageSize = r.int32();
+                    break;
+                }
+            case 16: {
+                    m.sortParam = $root.CommentReplyParameters.SortParam.decode(r, r.uint32());
+                    break;
+                }
+            default:
+                r.skipType(t & 7);
+                break;
+            }
+        }
+        return m;
+    };
+
     CommentReplyParameters.SortParam = (function() {
 
         function SortParam(p) {
@@ -175,6 +332,27 @@ export const CommentReplyParameters = $root.CommentReplyParameters = (() => {
             if (m.sortType != null && Object.hasOwnProperty.call(m, "sortType"))
                 w.uint32(8).int32(m.sortType);
             return w;
+        };
+
+        SortParam.decode = function decode(r, l, e) {
+            if (!(r instanceof $Reader))
+                r = $Reader.create(r);
+            var c = l === undefined ? r.len : r.pos + l, m = new $root.CommentReplyParameters.SortParam();
+            while (r.pos < c) {
+                var t = r.uint32();
+                if (t === e)
+                    break;
+                switch (t >>> 3) {
+                case 1: {
+                        m.sortType = r.int32();
+                        break;
+                    }
+                default:
+                    r.skipType(t & 7);
+                    break;
+                }
+            }
+            return m;
         };
 
         SortParam.SortType = (function() {
@@ -210,6 +388,27 @@ export const BrowserContinuation = $root.BrowserContinuation = (() => {
         return w;
     };
 
+    BrowserContinuation.decode = function decode(r, l, e) {
+        if (!(r instanceof $Reader))
+            r = $Reader.create(r);
+        var c = l === undefined ? r.len : r.pos + l, m = new $root.BrowserContinuation();
+        while (r.pos < c) {
+            var t = r.uint32();
+            if (t === e)
+                break;
+            switch (t >>> 3) {
+            case 80226972: {
+                    m.request = $root.BrowserContinuation.Request.decode(r, r.uint32());
+                    break;
+                }
+            default:
+                r.skipType(t & 7);
+                break;
+            }
+        }
+        return m;
+    };
+
     BrowserContinuation.Request = (function() {
 
         function Request(p) {
@@ -230,6 +429,31 @@ export const BrowserContinuation = $root.BrowserContinuation = (() => {
             if (m.continuationBase64 != null && Object.hasOwnProperty.call(m, "continuationBase64"))
                 w.uint32(26).string(m.continuationBase64);
             return w;
+        };
+
+        Request.decode = function decode(r, l, e) {
+            if (!(r instanceof $Reader))
+                r = $Reader.create(r);
+            var c = l === undefined ? r.len : r.pos + l, m = new $root.BrowserContinuation.Request();
+            while (r.pos < c) {
+                var t = r.uint32();
+                if (t === e)
+                    break;
+                switch (t >>> 3) {
+                case 2: {
+                        m.description = r.string();
+                        break;
+                    }
+                case 3: {
+                        m.continuationBase64 = r.string();
+                        break;
+                    }
+                default:
+                    r.skipType(t & 7);
+                    break;
+                }
+            }
+            return m;
         };
 
         return Request;
@@ -258,6 +482,31 @@ export const BrowserCommentListContinuation = $root.BrowserCommentListContinuati
         if (m.mainCommentRequest != null && Object.hasOwnProperty.call(m, "mainCommentRequest"))
             $root.MainCommentRequest.encode(m.mainCommentRequest, w.uint32(426).fork()).ldelim();
         return w;
+    };
+
+    BrowserCommentListContinuation.decode = function decode(r, l, e) {
+        if (!(r instanceof $Reader))
+            r = $Reader.create(r);
+        var c = l === undefined ? r.len : r.pos + l, m = new $root.BrowserCommentListContinuation();
+        while (r.pos < c) {
+            var t = r.uint32();
+            if (t === e)
+                break;
+            switch (t >>> 3) {
+            case 2: {
+                    m.description = r.string();
+                    break;
+                }
+            case 53: {
+                    m.mainCommentRequest = $root.MainCommentRequest.decode(r, r.uint32());
+                    break;
+                }
+            default:
+                r.skipType(t & 7);
+                break;
+            }
+        }
+        return m;
     };
 
     return BrowserCommentListContinuation;

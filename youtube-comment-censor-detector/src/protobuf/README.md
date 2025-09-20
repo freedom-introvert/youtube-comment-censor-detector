@@ -14,7 +14,6 @@ cd到当前目录
 
 ```
 pbjs -t static-module -w es6 ^
-  --no-decode ^
   --no-verify ^
   --no-convert ^
   --no-delimited ^

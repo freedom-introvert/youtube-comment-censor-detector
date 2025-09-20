@@ -23,7 +23,7 @@ export default defineConfig({
         namespace: 'npm/vite-plugin-monkey',
         match: ['*://*.youtube.com/*'],
         author: "freedom-introvert",
-        version: "2.3.5",
+        version: "2.5.6",
         license: "GPL",
         "run-at":"document-start"
       },

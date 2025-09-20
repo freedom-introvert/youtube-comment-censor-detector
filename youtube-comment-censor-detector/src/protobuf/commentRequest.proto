@@ -19,7 +19,7 @@ message NextContinuation {
 
 message CommentAreaWrapper {
   // 这个包装器中的字段 2 显然包含视频 ID。
-  string videoId = 2; // "iBNQdQJQXcw"
+  string videoId = 2;
 }
 
 message MainCommentRequest {

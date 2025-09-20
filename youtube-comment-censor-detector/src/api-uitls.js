@@ -1,4 +1,4 @@
-import { standardBase64ToUrlSafe } from "./util";
+import { u8ArrayToBase64 } from "./util";
 import { NextContinuation, BrowserContinuation, BrowserCommentListContinuation } from "./continuation-proto";
 /**
  * 创建视频根评论列表的continuation信息
@@ -22,10 +22,7 @@ export function createVideoRootCommentListContinuation(channelId, videoId, isLat
       }
     }
   };
-  let encoded = NextContinuation.encode(payload);
-  let buffer = encoded.finish();
-  let continuation = btoa(String.fromCharCode(...buffer));
-  return standardBase64ToUrlSafe(continuation);
+  return u8ArrayToBase64(NextContinuation.encode(payload).finish());
 }
 
 /**
@@ -55,10 +52,7 @@ export function createVideoReplyCommentListContinuation(channelId, videoId, root
       }
     }
   }
-  let encoded = NextContinuation.encode(payload);
-  let buffer = encoded.finish();
-  let continuation = btoa(String.fromCharCode(...buffer));
-  return standardBase64ToUrlSafe(continuation);
+  return u8ArrayToBase64(NextContinuation.encode(payload).finish());
 }
 
 /**
@@ -79,11 +73,8 @@ export function createPostRootCommentListContinuation(channelId, postId, isLates
       }
     }
   }
-  let encoded = BrowserCommentListContinuation.encode(payload);
-  let buffer = encoded.finish();
-  let continuation = btoa(String.fromCharCode(...buffer));
-  continuation = standardBase64ToUrlSafe(continuation);
 
+  let continuation = u8ArrayToBase64(BrowserCommentListContinuation.encode(payload).finish());
   payload = {
     request: {
       description: "FEcomment_post_detail_page_web_top_level",
@@ -91,10 +82,7 @@ export function createPostRootCommentListContinuation(channelId, postId, isLates
     }
   }
 
-  encoded = BrowserContinuation.encode(payload);
-  buffer = encoded.finish();
-  continuation = btoa(String.fromCharCode(...buffer));
-  return standardBase64ToUrlSafe(continuation);
+  return u8ArrayToBase64(BrowserContinuation.encode(payload).finish());
 }
 
 /** 创建帖子的回复评论列表的continuation信息
@@ -120,10 +108,7 @@ export function createPostReplyCommentListContinuation(channelId, postId, rootCo
       }
     }
   }
-  let encoded = BrowserCommentListContinuation.encode(payload);
-  let buffer = encoded.finish();
-  continuation = btoa(String.fromCharCode(...buffer));
-  continuation = standardBase64ToUrlSafe(continuation);
+  let continuation = u8ArrayToBase64(BrowserCommentListContinuation.encode(payload).finish());
 
   payload = {
     request: {
@@ -132,8 +117,40 @@ export function createPostReplyCommentListContinuation(channelId, postId, rootCo
     }
   }
 
-  encoded = BrowserContinuation.encode(payload);
-  buffer = encoded.finish();
-  let continuation = btoa(String.fromCharCode(...buffer));
-  return standardBase64ToUrlSafe(continuation);
+  return u8ArrayToBase64(BrowserContinuation.encode(payload).finish());
+}
+
+/**
+ * 获取评论API下一页的continuation（pageToken）
+ * @param {*} data api整个响应体
+ * @returns 
+ */
+
+export function findNextContinuation(data) {
+  let continuation = null;
+  for (const endpoint of data.onResponseReceivedEndpoints) {
+    const items = endpoint.appendContinuationItemsAction?.continuationItems
+      || endpoint.reloadContinuationItemsCommand?.continuationItems;
+
+    if (!items) continue;
+
+    for (const item of items) {
+      const continuationItemRenderer = item.continuationItemRenderer;
+
+      if (!continuationItemRenderer) continue;
+
+      const token = continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token;
+      if (!token) {
+        continuation = continuationItemRenderer?.button.buttonRenderer.command.continuationCommand.token;
+      }
+      
+      if (token) {
+        continuation = token;
+        break;
+      }
+    }
+
+    if (continuation) break;
+  }
+  return continuation;
 }

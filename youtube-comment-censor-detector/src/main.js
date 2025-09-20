@@ -8,12 +8,20 @@ import { unsafeWindow, GM_registerMenuCommand, GM_addElement } from "$"
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import App from './App.vue';
-import { createUrl, urlSafeBase64ToStandard, standardBase64ToUrlSafe, findValueInSingleEntryArray } from "./util";
+import {
+  createUrl, findValueInSingleEntryArray,
+  base64ToU8Array, u8ArrayToBase64
+} from "./util";
 import {
   createVideoRootCommentListContinuation, createVideoReplyCommentListContinuation,
-  createPostRootCommentListContinuation, createPostReplyCommentListContinuation
+  createPostRootCommentListContinuation, createPostReplyCommentListContinuation,
+  findNextContinuation
 } from './api-uitls';
+import { createPinia } from 'pinia';
+import { useSettingsStore } from './settingsStore';
 
+const pinia = createPinia();
+const settings = useSettingsStore(pinia);
 
 // import en from 'element-plus/es/locale/lang/en'
 // import zhCn from 'element-plus/es/locale/lang/zh-cn'
@@ -59,6 +67,11 @@ var db = null;
 
 //正在检查中的评论ID集合，用于阻止正在检查中的评论被用户删除
 const checkingCommentIdSet = new Set();
+
+//强制二级评论区按最新排序功能的下个continuation白名单集合
+const continuationWhitelist = new Set();
+//前者的基础上，在目标评论显示这个是被（热门屏蔽的）
+const hotCommentIdSet = new Set();
 
 function getAuthorization() {
   return authorizationCache;
@@ -113,9 +126,7 @@ async function findComment(commentRecord, isLogin = true) {
     }
 
     let encoded = NextContinuation.encode(payload);
-    let buffer = encoded.finish();
-    continuation = btoa(String.fromCharCode(...buffer));
-    continuation = standardBase64ToUrlSafe(continuation);
+    continuation = u8ArrayToBase64(encoded.finish());
 
     requestUrl = "https://www.youtube.com/youtubei/v1/next?prettyPrint=false";
   } else if (commentRecord.webPageType == "WEB_PAGE_TYPE_BROWSE") {
@@ -132,8 +143,7 @@ async function findComment(commentRecord, isLogin = true) {
     }
     let encoded = BrowserCommentListContinuation.encode(payload);
     let buffer = encoded.finish();
-    continuation = btoa(String.fromCharCode(...buffer));
-    continuation = standardBase64ToUrlSafe(continuation)
+    continuation = u8ArrayToBase64(buffer);
 
     payload = {
       request: {
@@ -144,8 +154,7 @@ async function findComment(commentRecord, isLogin = true) {
 
     encoded = BrowserContinuation.encode(payload);
     buffer = encoded.finish();
-    continuation = btoa(String.fromCharCode(...buffer));
-    continuation = standardBase64ToUrlSafe(continuation);
+    continuation = u8ArrayToBase64(buffer);
 
     requestUrl = "https://www.youtube.com/youtubei/v1/browse?prettyPrint=false";
   } else {
@@ -424,24 +433,7 @@ async function hotBanCheck(commentRecord, observer, controller) {
     }
 
     //获取翻页tocken，即下一次请求用的continuation
-    continuation = null;
-
-    for (const endpoint of response.onResponseReceivedEndpoints) {
-      const items = endpoint.appendContinuationItemsAction?.continuationItems
-        || endpoint.reloadContinuationItemsCommand?.continuationItems;
-
-      if (!items) continue;
-
-      for (const item of items) {
-        const token = item.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token;
-        if (token) {
-          continuation = token;
-          break;
-        }
-      }
-
-      if (continuation) break;
-    }
+    continuation = findNextContinuation(response);
   }
   commentRecord.hotBan = true;
   updateRecord(commentRecord);
@@ -542,8 +534,7 @@ async function handlerYoutubei(request) {
     }
     return response;
   } else if (request.url.startsWith("https://www.youtube.com/youtubei/v1/comment/perform_comment_action")) {
-    let actionBase64 = urlSafeBase64ToStandard(requestBody.actions[0]);
-    let actionInfo = CommentAction.decode(Uint8Array.from(atob(actionBase64), c => c.charCodeAt(0)));
+    let actionInfo = CommentAction.decode(base64ToU8Array(requestBody.actions[0]));
 
     //如果是删除评论的Action
     if (actionInfo.action == 6) {
@@ -584,8 +575,8 @@ async function handlerYoutubei(request) {
       }
     }
   } else if (request.url.startsWith("https://www.youtube.com/youtubei/v1/comment/update_comment")) {
-    let updateCommentParams = urlSafeBase64ToStandard(requestBody.updateCommentParams);
-    let decodedParams = UpdateCommentParams.decode(Uint8Array.from(atob(updateCommentParams), c => c.charCodeAt(0)));
+    let updateCommentParams = requestBody.updateCommentParams;
+    let decodedParams = UpdateCommentParams.decode(base64ToU8Array(updateCommentParams));
     if (checkingCommentIdSet.has(decodedParams.commentId)) {
       alert("现在不能修改该评论，因为评论还未完成检查，请先完成检查！");
       const responseBody = {
@@ -622,9 +613,157 @@ async function handlerYoutubei(request) {
       }
     }
     return response;
+  } else if (request.url.startsWith("https://www.youtube.com/youtubei/v1/next") ||
+    request.url.startsWith("https://www.youtube.com/youtubei/v1/browse")) {
+    let apiUrl = request.url;
+
+    if (!settings.forceTimeSort) {
+      return await originalFetch(request);
+    }
+    //强制二级评论区按最新排序
+    let continuation = requestBody.continuation;
+    
+    let response;
+    let hotSearchContinuation;
+    if (!continuationWhitelist.has(requestBody.continuation)) {
+
+      if (apiUrl.startsWith("https://www.youtube.com/youtubei/v1/next")) {
+        let decodedNextContinuation = NextContinuation.decode(base64ToU8Array(continuation));
+        //不是评论回复列表的请求
+        if (!decodedNextContinuation.mainCommentRequest?.commentReplyParameters) {
+          return await originalFetch(request);
+        }
+        requestBody.continuation = generateVideoAreaReqContinuation(decodedNextContinuation, 2);
+        hotSearchContinuation = generateVideoAreaReqContinuation(decodedNextContinuation, 1);
+      } else {
+        let decodedBrowserContinuation = BrowserContinuation.decode(base64ToU8Array(continuation));
+        if (decodedBrowserContinuation.request.description != "FEcomment_post_detail_page_web_replies_page") {
+          //不是评论回复列表的请求
+          return await originalFetch(request);
+        }
+        requestBody.continuation = generatePostAreaReqContinuation(decodedBrowserContinuation, 2);
+        hotSearchContinuation = generatePostAreaReqContinuation(decodedBrowserContinuation, 1);
+      }
+
+
+      request = new Request(request.url, {
+        method: request.method,
+        headers: request.headers,
+        body: JSON.stringify(requestBody),
+      });
+
+      response = await originalFetch(request);
+      if (response.ok) {
+        let responseJson = await response.clone().json();
+        let nextContinuation = findNextContinuation(responseJson);
+        //加入白名单，防止下次的请求继续被修改
+        if (nextContinuation) {
+          continuationWhitelist.add(nextContinuation);
+        }
+        //第一次加载二级评论区时，获取一下热门评论区的评论ID列表，以便标记哪些是热门屏蔽的
+        if (settings.showBlockedHotComments) {
+          await loadAllHotReplyId(hotSearchContinuation, apiUrl);
+          addHotBannedTip(responseJson);
+          response = changeResponseBody(response, responseJson);
+        }
+      }
+
+
+    } else {
+      continuationWhitelist.delete(requestBody.continuation);
+      response = await originalFetch(request);
+      let responseJson = await response.clone().json();
+      let nextContinuation = findNextContinuation(responseJson);
+      if (nextContinuation) {
+        continuationWhitelist.add(nextContinuation);
+      }
+      if (settings.showBlockedHotComments) {
+        addHotBannedTip(responseJson);
+        response = changeResponseBody(response, responseJson);
+      }
+    }
+
+    return response;
   }
 
   return await originalFetch(request);
+}
+
+function generateVideoAreaReqContinuation(decodedNextContinuation, sortType) {
+  decodedNextContinuation.mainCommentRequest.commentReplyParameters.sortParam.sortType = sortType;
+  return u8ArrayToBase64(NextContinuation.encode(decodedNextContinuation).finish());
+}
+
+function generatePostAreaReqContinuation(decodedBrowserContinuation, sortType) {
+  let decodedBrowserCommentListContinuation = BrowserCommentListContinuation
+    .decode(base64ToU8Array(decodedBrowserContinuation.request.continuationBase64));
+  decodedBrowserCommentListContinuation.mainCommentRequest.commentReplyParameters.sortParam.sortType = sortType;
+  decodedBrowserContinuation.request.continuationBase64 = u8ArrayToBase64(
+    BrowserCommentListContinuation.encode(decodedBrowserCommentListContinuation).finish()
+  );
+  return u8ArrayToBase64(BrowserContinuation.encode(decodedBrowserContinuation).finish());
+}
+
+
+
+async function loadAllHotReplyId(continuation, api) {
+  let count = 0;
+  while (continuation) {
+    let data = {
+      context: contextCache,
+      continuation
+    }
+
+    let options = {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: {
+        authorization: authorizationCache
+      }
+    };
+
+    let response;
+    try {
+      response = await (await originalFetch(api, options)).json();
+    } catch (err) {
+      return;
+    }
+
+    let mutations = response.frameworkUpdates.entityBatchUpdate.mutations;
+    for (let mutation of mutations) {
+      if (mutation.payload.commentEntityPayload) {
+        hotCommentIdSet.add(mutation.payload.commentEntityPayload.properties.commentId);
+        count++;
+      }
+    }
+
+    continuation = findNextContinuation(response);
+  }
+
+  console.log(`已获取 ${count} 个热门回复评论……`);
+
+}
+
+function addHotBannedTip(response) {
+  if (!response.frameworkUpdates) {
+    return;
+  }
+  for (let mutation of response.frameworkUpdates.entityBatchUpdate.mutations) {
+    let entity = mutation.payload.commentEntityPayload;
+    if (entity) {
+      let properties = entity.properties;
+      if (!hotCommentIdSet.has(properties.commentId)) {
+        properties.publishedTime = properties.publishedTime + "（热门屏蔽的）";
+      }
+    }
+  }
+}
+
+function changeResponseBody(originalResponse, bodyJson) {
+  return new Response(JSON.stringify(bodyJson), {
+    status: originalResponse.status,
+    headers: originalResponse.headers
+  });
 }
 
 
@@ -810,6 +949,10 @@ async function init() {
     menuListener.onSearchHotBan();
   })
 
+  GM_registerMenuCommand("⚙️ 设置", () => {
+    menuListener.onOpenSettings();
+  })
+
   //创建用于显示历史评论、设置等对话框的图层
   const div = document.createElement('div');
   div.id = "yt-ccd";
@@ -817,6 +960,7 @@ async function init() {
   document.body.append(div);
   let app = createApp(App);
   app.use(ElementPlus);
+  app.use(pinia);
   app.provide("menuListener", menuListener);
   app.provide("db", db);
   app.provide("check", check);

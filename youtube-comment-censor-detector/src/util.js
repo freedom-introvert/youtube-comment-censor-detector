@@ -19,6 +19,7 @@ export function urlSafeBase64ToStandard(urlSafeBase64) {
   
   return standardBase64;
 }
+
 /**
  * 替换标准 Base64 字符为 URL 安全字符
  * @param {String} standardBase64 
@@ -31,6 +32,34 @@ export function standardBase64ToUrlSafe(standardBase64) {
       .replace(/\//g, '_');  // 替换 / 为 _
   
   return urlSafeBase64;
+}
+
+/**
+ * base64字符串转换为Uint8Array
+ * @param {String} base64 base64字符串
+ * @param {Boolean} urlSafe  是否为URL安全的base64字符串
+ * @returns 
+ */
+
+export function base64ToU8Array(base64,urlSafe = true){
+  if(urlSafe){
+    base64 = urlSafeBase64ToStandard(base64);
+  }
+  return Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+}
+
+/**
+ * Uint8Array转换为base64字符串
+ * @param {Uint8Array} u8Array Uint8Array对象
+ * @param {Boolean} urlSafe 是否返回URL安全的base64字符串
+ * @returns 
+ */
+export function u8ArrayToBase64(u8Array, urlSafe = true) {
+  let base64 = btoa(String.fromCharCode(...u8Array));
+  if (urlSafe) {
+    base64 = standardBase64ToUrlSafe(base64);
+  }
+  return base64;
 }
 
 export function createUrl(path) {

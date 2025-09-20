@@ -35,7 +35,7 @@
 <script setup>
 import { reactive, ref, inject, onUnmounted } from 'vue';
 import { createUrl } from '../util';
-import { createVideoRootCommentListContinuation, createPostRootCommentListContinuation } from '../api-uitls';
+import { createVideoRootCommentListContinuation, createPostRootCommentListContinuation, findNextContinuation } from '../api-uitls';
 import YouTubeComment from './YouTubeComment.vue';
 
 const originalFetch = inject("originalFetch");
@@ -133,23 +133,7 @@ async function onSearch() {
       }
     }
 
-    continuation = null;
-    for (const endpoint of response.onResponseReceivedEndpoints) {
-      const items = endpoint.appendContinuationItemsAction?.continuationItems
-        || endpoint.reloadContinuationItemsCommand?.continuationItems;
-
-      if (!items) continue;
-
-      for (const item of items) {
-        const token = item.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token;
-        if (token) {
-          continuation = token;
-          break;
-        }
-      }
-
-      if (continuation) break;
-    }
+    continuation = findNextContinuation(response);
   }
   next();
 }

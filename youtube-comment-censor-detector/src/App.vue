@@ -8,6 +8,11 @@
       body-class="dialog-body" align-center destroy-on-close>
         <HotBanCommentSearcher/>
     </el-dialog>
+    <el-dialog v-model="settingsVisible" :z-index="3000" title="设置" width="60%" style="height: 92vh;"
+      body-class="dialog-body" align-center destroy-on-close>
+        <Settings/>
+    </el-dialog>
+    
   </div>
 </template>
 
@@ -15,10 +20,11 @@
 import { inject,ref } from 'vue';
 import CommentHistories from './components/CommentHistories.vue';
 import HotBanCommentSearcher from './components/HotBanCommentSearcher.vue';
-
+import Settings from './components/Settings.vue';
 
 let historiesVisible = ref(false);
 let searchHotBanVisible = ref(false);
+let settingsVisible = ref(false);
 
 const menuListener = inject("menuListener");
 
@@ -28,6 +34,10 @@ menuListener.onOpenHistory = () => {
 
 menuListener.onSearchHotBan = () => {
   searchHotBanVisible.value = true;
+}
+
+menuListener.onOpenSettings = () => {
+  settingsVisible.value = true;
 }
 
 </script>
