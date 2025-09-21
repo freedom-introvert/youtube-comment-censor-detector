@@ -620,9 +620,11 @@ async function handlerYoutubei(request) {
     if (!settings.forceTimeSort) {
       return await originalFetch(request);
     }
-    //强制二级评论区按最新排序
     let continuation = requestBody.continuation;
-    
+    if (!continuation) {
+      return await originalFetch(request);
+    }
+    //强制二级评论区按最新排序
     let response;
     let hotSearchContinuation;
     if (!continuationWhitelist.has(requestBody.continuation)) {
